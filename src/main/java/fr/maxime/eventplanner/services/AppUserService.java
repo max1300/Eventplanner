@@ -28,6 +28,7 @@ import java.util.Optional;
 public class AppUserService implements UserDetailsService {
 
     public static final Logger LOG = LoggerFactory.getLogger(AppUserService.class);
+    public static final String USERNAME_ALREADY_TAKEN = "Ce username est déjà pris";
 
     private final Javers javers;
     private final AppUserRepository repository;
@@ -64,6 +65,12 @@ public class AppUserService implements UserDetailsService {
 
     @Transactional
     public ResponseEntity<AppUser> create(AppUser item) {
+        AppUser user = repository.findAppUserByUsername(item.getUsername())
+                .orElse(null);
+        if (user != null) {
+            throw new IllegalStateException(USERNAME_ALREADY_TAKEN);
+        }
+
         try {
             String encodedPass = bCryptEncoder.encode(item.getPassword());
             item.setPassword(encodedPass);
