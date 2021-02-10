@@ -1,5 +1,7 @@
 package fr.maxime.eventplanner.services;
 
+import fr.maxime.eventplanner.exceptions.AppUserNotFoundException;
+import fr.maxime.eventplanner.exceptions.UsernameAlreadyExistException;
 import fr.maxime.eventplanner.mail.MailSender;
 import fr.maxime.eventplanner.models.AppUser;
 import fr.maxime.eventplanner.models.ConfirmationToken;
@@ -29,6 +31,7 @@ public class AppUserService implements UserDetailsService {
 
     public static final Logger LOG = LoggerFactory.getLogger(AppUserService.class);
     public static final String USERNAME_ALREADY_TAKEN = "Ce username est déjà pris";
+    public static final String USER_NOT_FOUND = "User not found with id : ";
 
     private final Javers javers;
     private final AppUserRepository repository;
@@ -57,18 +60,18 @@ public class AppUserService implements UserDetailsService {
         }
     }
 
-    public AppUser getById(Long id) {
+    public AppUser getById(Long id) throws AppUserNotFoundException {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id : " + id));
+                .orElseThrow(() -> new AppUserNotFoundException(USER_NOT_FOUND + id));
     }
 
 
     @Transactional
-    public ResponseEntity<AppUser> create(AppUser item) {
+    public ResponseEntity<AppUser> create(AppUser item) throws UsernameAlreadyExistException {
         AppUser user = repository.findAppUserByUsername(item.getUsername())
                 .orElse(null);
         if (user != null) {
-            throw new IllegalStateException(USERNAME_ALREADY_TAKEN);
+            throw new UsernameAlreadyExistException(USERNAME_ALREADY_TAKEN);
         }
 
         try {
@@ -91,7 +94,7 @@ public class AppUserService implements UserDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<AppUser> update(Long id, AppUser item) {
+    public ResponseEntity<AppUser> update(Long id, AppUser item) throws AppUserNotFoundException {
         Optional<AppUser> existingItemOptional = repository.findById(id);
 
         if (existingItemOptional.isPresent()) {
@@ -105,7 +108,7 @@ public class AppUserService implements UserDetailsService {
             return new ResponseEntity<>(repository.save(existingItem), HttpStatus.OK);
         } else {
             LOG.debug("Impossible de trouver l'appuser avec l'id {}", id);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw  new AppUserNotFoundException(USER_NOT_FOUND + id);
         }
     }
 
