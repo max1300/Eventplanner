@@ -1,9 +1,11 @@
-package fr.maxime.eventplanner.services;
+package fr.maxime.eventplanner.services.register;
 
 import fr.maxime.eventplanner.dtos.RegistrationRequest;
 import fr.maxime.eventplanner.models.AppUser;
 import fr.maxime.eventplanner.models.AppUserRole;
 import fr.maxime.eventplanner.models.ConfirmationToken;
+import fr.maxime.eventplanner.services.AppUserService;
+import fr.maxime.eventplanner.services.ConfirmationTokenService;
 import fr.maxime.eventplanner.validators.EmailValidator;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;

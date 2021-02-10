@@ -1,4 +1,4 @@
-package fr.maxime.eventplanner.services;
+package fr.maxime.eventplanner.services.login;
 
 import fr.maxime.eventplanner.Jwt.JwtProvider;
 import fr.maxime.eventplanner.dtos.AuthenticationResponse;

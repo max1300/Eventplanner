@@ -82,7 +82,7 @@ public class AppUserService implements UserDetailsService {
             ConfirmationToken save = confirmationTokenService.save(confirmationToken);
 
             String link = "http://localhost:8080/authentication/confirm?token=" + save.getToken();
-            mailSender.send(savedItem.getUsername(), mailSender.buildEmail(savedItem.getUsername(), link));
+            mailSender.send(savedItem.getEmail(), mailSender.buildEmail(savedItem.getUsername(), link));
             return new ResponseEntity<>(savedItem, HttpStatus.CREATED);
         } catch (Exception e) {
             LOG.error("Une erreur est survenue pendant la création de l'appuser", e);
