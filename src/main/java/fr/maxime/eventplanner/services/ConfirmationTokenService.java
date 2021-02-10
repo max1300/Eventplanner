@@ -21,6 +21,7 @@ import java.util.UUID;
 public class ConfirmationTokenService {
 
     public static final Logger LOG = LoggerFactory.getLogger(AppUserService.class);
+    public static final String TOKEN_NOT_FOUND = "ConfirmationToken non trouvé";
 
     private final Javers javers;
     private final ConfirmationTokenRepository repository;
@@ -40,9 +41,9 @@ public class ConfirmationTokenService {
         );
     }
 
-    public ConfirmationToken getByToken(String token) {
+    public ConfirmationToken getByToken(String token) throws IllegalStateException{
         return repository.findByToken(token)
-                .orElseThrow(() -> new IllegalStateException("Token non trouvé"));
+                .orElseThrow(() -> new IllegalStateException(TOKEN_NOT_FOUND));
     }
 
     public boolean checkExpirationToken(ConfirmationToken confirmationToken) {
@@ -65,7 +66,7 @@ public class ConfirmationTokenService {
             LOG.info("Mise à jour de l'appuser {}. MOdification des propriétées : {}", confirmationTokenId, diff.getChanges());
             return existingItem;
         } else {
-            throw new RuntimeException("ConfirmationToken non trouvé !!");
+            throw new IllegalStateException(TOKEN_NOT_FOUND);
         }
     }
 }

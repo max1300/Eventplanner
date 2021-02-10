@@ -24,7 +24,7 @@ public class MailService implements MailSender {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
             helper.setText(email, true);
             helper.setTo(to);
-            helper.setFrom("***.*****@****.com");
+            helper.setFrom("max@hotmail.com");
             helper.setSubject("Confirm your email");
             javaMailSender.send(mimeMessage);
         } catch (MessagingException e) {
