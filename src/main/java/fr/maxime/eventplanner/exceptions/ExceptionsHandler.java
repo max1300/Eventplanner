@@ -1,66 +1,115 @@
 package fr.maxime.eventplanner.exceptions;
 
-import fr.maxime.eventplanner.dtos.CustomHttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.time.LocalDate;
-
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import java.util.Date;
 
 @RestControllerAdvice
 public class ExceptionsHandler extends ResponseEntityExceptionHandler {
     public static final Logger LOG = LoggerFactory.getLogger(ExceptionsHandler.class);
 
 
-    @ExceptionHandler(AppUserNotFoundException.class)
-    public ResponseEntity<CustomHttpResponse> userNotFound(AppUserNotFoundException exception) {
-        LOG.debug(exception.getMessage());
-        return getHttpResponse(HttpStatus.NOT_FOUND, exception.getMessage());
-    }
-
-    @ExceptionHandler(UsernameAlreadyExistException.class)
-    public ResponseEntity<CustomHttpResponse> usernameExistException(UsernameAlreadyExistException exception) {
-        LOG.debug(exception.getMessage());
-        return getHttpResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
-    }
-
     @ExceptionHandler(EmailAlreadyExistException.class)
-    public ResponseEntity<?> emailExistException(EmailAlreadyExistException exception) {
-        LOG.debug(exception.getMessage());
-        CustomHttpResponse response = new CustomHttpResponse(LocalDate.now(), NOT_FOUND.value(), NOT_FOUND,
-                NOT_FOUND.getReasonPhrase().toUpperCase(), exception.getMessage().toUpperCase());
-        return new ResponseEntity<>(response, NOT_FOUND);
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMessage emailAlreadyExist(EmailAlreadyExistException ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+
+        return message;
     }
 
-    @ExceptionHandler(EmailNotValidException.class)
-    public ResponseEntity<CustomHttpResponse> emailValidException(EmailNotValidException exception) {
-        LOG.debug(exception.getMessage());
-        return getHttpResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
+    @ExceptionHandler(AppUserNotFoundException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMessage AppUserNotFound(AppUserNotFoundException ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+
+        return message;
     }
 
     @ExceptionHandler(TokenAlreadyConfirmedException.class)
-    public ResponseEntity<CustomHttpResponse> tokenConfirmedException(TokenAlreadyConfirmedException exception) {
-        LOG.debug(exception.getMessage());
-        return getHttpResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMessage tokenAlreadyConfirmed(TokenAlreadyConfirmedException ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+
+        return message;
+    }
+
+    @ExceptionHandler(AppUserAlreadyExistException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMessage AppUserAlreadyExist(AppUserAlreadyExistException ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+
+        return message;
+    }
+
+    @ExceptionHandler(EmailNotValidException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMessage emailNotValid(EmailNotValidException ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+
+        return message;
     }
 
     @ExceptionHandler(TokenExpiredException.class)
-    public ResponseEntity<CustomHttpResponse> tokenExpiredException(TokenExpiredException exception) {
-        LOG.debug(exception.getMessage());
-        return getHttpResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMessage tokenExpired(TokenExpiredException ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+
+        return message;
     }
 
-    private ResponseEntity<CustomHttpResponse> getHttpResponse(HttpStatus httpStatus, String message) {
-        return new ResponseEntity<>(new CustomHttpResponse(LocalDate.now(), httpStatus.value(), httpStatus,
-                httpStatus.getReasonPhrase().toUpperCase(), message.toUpperCase()), httpStatus);
+    @ExceptionHandler(UsernameAlreadyExistException.class)
+    @ResponseStatus(value = HttpStatus.NOT_FOUND)
+    public ErrorMessage usernameAlreadyExist(UsernameAlreadyExistException ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
 
+        return message;
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorMessage globalExceptionHandler(Exception ex, WebRequest request) {
+        ErrorMessage message = new ErrorMessage(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                new Date(),
+                ex.getMessage(),
+                request.getDescription(false));
+
+        return message;
     }
 
 }
