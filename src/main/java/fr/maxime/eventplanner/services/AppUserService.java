@@ -12,9 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +22,7 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-public class AppUserService implements UserDetailsService {
+public class AppUserService {
 
     public static final Logger LOG = LoggerFactory.getLogger(AppUserService.class);
     public static final String USERNAME_ALREADY_TAKEN = "Ce username est déjà pris";
@@ -125,10 +122,4 @@ public class AppUserService implements UserDetailsService {
         return repository.findAppUserByEmail(email).orElse(null);
     }
 
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return repository.findAppUserByUsername(username).orElseThrow(() ->
-                new UsernameNotFoundException(String.format("Username with username %s not found", username)));
-    }
 }

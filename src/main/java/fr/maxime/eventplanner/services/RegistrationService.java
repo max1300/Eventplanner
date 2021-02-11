@@ -58,7 +58,7 @@ public class RegistrationService {
 
         byToken.setConfirmedAt(LocalDateTime.now());
         confirmationTokenService.update(byToken.getConfirmationTokenId(), byToken);
-        user.setEnabled(true);
+        user.setActive(true);
         service.update(user.getAppUserId(), user);
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
