@@ -7,9 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import java.util.Collection;
-import java.util.stream.Collectors;
-
-import static java.util.Arrays.stream;
+import java.util.Collections;
 
 @Getter
 @Setter
@@ -18,7 +16,7 @@ import static java.util.Arrays.stream;
 @AllArgsConstructor
 @Entity
 @Table(name = "app_user")
-public class AppUser implements UserDetails {
+public class AppUser {
 
     @SequenceGenerator(name = "appUser_sequence", sequenceName = "appUser_sequence", allocationSize = 1)
     @Id
@@ -29,8 +27,8 @@ public class AppUser implements UserDetails {
     private String password;
     @Enumerated(EnumType.STRING)
     private AppUserRole appUserRole;
-    private Boolean isActive;
-    private Boolean enabled;
+    private boolean isActive;
+    private boolean isNotLocked;
 
     public AppUser(String username, String email, String password, AppUserRole appUserRole) {
         this.username = username;
@@ -39,33 +37,5 @@ public class AppUser implements UserDetails {
         this.appUserRole = appUserRole;
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return stream(this.appUserRole.getAuthorities()).map(SimpleGrantedAuthority::new).collect(Collectors.toList());
-    }
 
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return getIsActive();
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
 }

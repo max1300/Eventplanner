@@ -1,10 +1,9 @@
 package fr.maxime.eventplanner.services;
 
-import fr.maxime.eventplanner.exceptions.AppUserNotFoundException;
-import fr.maxime.eventplanner.exceptions.UsernameAlreadyExistException;
+import fr.maxime.eventplanner.mail.MailSender;
 import fr.maxime.eventplanner.models.AppUser;
+import fr.maxime.eventplanner.models.ConfirmationToken;
 import fr.maxime.eventplanner.repositories.AppUserRepository;
-import fr.maxime.eventplanner.services.login.LoginAttemptService;
 import lombok.AllArgsConstructor;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
@@ -16,25 +15,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 @Service
 @AllArgsConstructor
-@Transactional
-public class AppUserService implements UserDetailsService {
+public class AppUserService {
 
     public static final Logger LOG = LoggerFactory.getLogger(AppUserService.class);
-    public static final String USER_NOT_FOUND = "User not found with id : ";
+    public static final String USERNAME_ALREADY_TAKEN = "Ce username est déjà pris";
 
     private final Javers javers;
     private final AppUserRepository repository;
-    private final LoginAttemptService loginAttemptService;
+    private final ConfirmationTokenService confirmationTokenService;
+    private final MailSender mailSender;
+    private final BCryptPasswordEncoder bCryptEncoder;
 
 
     public ResponseEntity<List<AppUser>> getAll() {
@@ -57,21 +57,41 @@ public class AppUserService implements UserDetailsService {
         }
     }
 
-    public AppUser getById(Long id) throws AppUserNotFoundException {
+    public AppUser getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new AppUserNotFoundException(USER_NOT_FOUND + id));
+                .orElseThrow(() -> new RuntimeException("User not found with id : " + id));
     }
 
 
-    public AppUser create(AppUser item) throws UsernameAlreadyExistException {
-        AppUser savedItem = repository.save(item);
-        LOG.info("Création d'un appuser");
+    @Transactional
+    public ResponseEntity<AppUser> create(AppUser item) {
+        AppUser user = repository.findAppUserByUsername(item.getUsername())
+                .orElse(null);
+        if (user != null) {
+            throw new IllegalStateException(USERNAME_ALREADY_TAKEN);
+        }
 
-        return savedItem;
+        try {
+            String encodedPass = bCryptEncoder.encode(item.getPassword());
+            item.setPassword(encodedPass);
 
+            AppUser savedItem = repository.save(item);
+            LOG.info("Création d'un appuser");
+
+            ConfirmationToken confirmationToken = confirmationTokenService.createConfirmationToken(savedItem);
+            ConfirmationToken save = confirmationTokenService.save(confirmationToken);
+
+            String link = "http://localhost:8080/authentication/confirm?token=" + save.getToken();
+            mailSender.send(savedItem.getUsername(), mailSender.buildEmail(savedItem.getUsername(), link));
+            return new ResponseEntity<>(savedItem, HttpStatus.CREATED);
+        } catch (Exception e) {
+            LOG.error("Une erreur est survenue pendant la création de l'appuser", e);
+            return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+        }
     }
 
-    public ResponseEntity<AppUser> update(Long id, AppUser item) throws AppUserNotFoundException {
+    @Transactional
+    public ResponseEntity<AppUser> update(Long id, AppUser item) {
         Optional<AppUser> existingItemOptional = repository.findById(id);
 
         if (existingItemOptional.isPresent()) {
@@ -85,7 +105,7 @@ public class AppUserService implements UserDetailsService {
             return new ResponseEntity<>(repository.save(existingItem), HttpStatus.OK);
         } else {
             LOG.debug("Impossible de trouver l'appuser avec l'id {}", id);
-            throw  new AppUserNotFoundException(USER_NOT_FOUND + id);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
