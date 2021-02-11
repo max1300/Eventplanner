@@ -12,9 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -126,30 +123,4 @@ public class AppUserService {
     }
 
 
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        AppUser user = repository.findAppUserByUsername(username).orElseThrow(() ->
-                new UsernameNotFoundException(String.format("Username with username %s not found", username)));
-        try {
-            validatingLoginAttempt(user);
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-
-        return user;
-    }
-
-    private void validatingLoginAttempt(AppUser user) throws ExecutionException {
-        if (user.isAccountNonLocked()) {
-            if (loginAttemptService.hasExcedeedNumberOfAttempts(user.getUsername())) {
-                user.setIsActive(false);
-            } else {
-                user.setIsActive(true);
-            }
-
-        } else {
-            loginAttemptService.evictUserFromCache(user.getUsername());
-        }
-    }
 }

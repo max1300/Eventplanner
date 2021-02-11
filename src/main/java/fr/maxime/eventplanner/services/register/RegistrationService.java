@@ -72,6 +72,7 @@ public class RegistrationService {
         return save1;
     }
 
+    @Transactional
     public ResponseEntity<AppUser> enableAccount(String token) throws TokenAlreadyConfirmedException, TokenExpiredException, AppUserNotFoundException {
         ConfirmationToken byToken = confirmationTokenService.getByToken(token);
         AppUser user = service.getById(byToken.getAppUser().getAppUserId());
@@ -86,8 +87,8 @@ public class RegistrationService {
 
         byToken.setConfirmedAt(LocalDateTime.now());
         confirmationTokenService.update(byToken.getConfirmationTokenId(), byToken);
-        user.setEnabled(true);
-        user.setIsActive(true);
+        user.setActive(true);
+        user.setNotLocked(true);
         service.update(user.getAppUserId(), user);
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
