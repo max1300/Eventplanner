@@ -7,7 +7,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.stream.Collectors;
+
+import static java.util.Arrays.stream;
 
 @Getter
 @Setter
@@ -27,8 +29,8 @@ public class AppUser implements UserDetails {
     private String password;
     @Enumerated(EnumType.STRING)
     private AppUserRole appUserRole;
-    private Boolean locked = false;
-    private Boolean enabled = false;
+    private Boolean isActive;
+    private Boolean enabled;
 
     public AppUser(String username, String email, String password, AppUserRole appUserRole) {
         this.username = username;
@@ -39,8 +41,7 @@ public class AppUser implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(appUserRole.name());
-        return Collections.singletonList(authority);
+        return stream(this.appUserRole.getAuthorities()).map(SimpleGrantedAuthority::new).collect(Collectors.toList());
     }
 
     @Override
@@ -55,7 +56,7 @@ public class AppUser implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return !locked;
+        return getIsActive();
     }
 
     @Override

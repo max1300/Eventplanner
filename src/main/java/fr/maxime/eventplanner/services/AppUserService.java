@@ -2,10 +2,9 @@ package fr.maxime.eventplanner.services;
 
 import fr.maxime.eventplanner.exceptions.AppUserNotFoundException;
 import fr.maxime.eventplanner.exceptions.UsernameAlreadyExistException;
-import fr.maxime.eventplanner.mail.MailSender;
 import fr.maxime.eventplanner.models.AppUser;
-import fr.maxime.eventplanner.models.ConfirmationToken;
 import fr.maxime.eventplanner.repositories.AppUserRepository;
+import fr.maxime.eventplanner.services.login.LoginAttemptService;
 import lombok.AllArgsConstructor;
 import org.javers.core.Javers;
 import org.javers.core.diff.Diff;
@@ -17,27 +16,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @AllArgsConstructor
+@Transactional
 public class AppUserService implements UserDetailsService {
 
     public static final Logger LOG = LoggerFactory.getLogger(AppUserService.class);
-    public static final String USERNAME_ALREADY_TAKEN = "Ce username est déjà pris";
     public static final String USER_NOT_FOUND = "User not found with id : ";
 
     private final Javers javers;
     private final AppUserRepository repository;
-    private final ConfirmationTokenService confirmationTokenService;
-    private final MailSender mailSender;
-    private final BCryptPasswordEncoder bCryptEncoder;
+    private final LoginAttemptService loginAttemptService;
 
 
     public ResponseEntity<List<AppUser>> getAll() {
@@ -66,34 +63,14 @@ public class AppUserService implements UserDetailsService {
     }
 
 
-    @Transactional
-    public ResponseEntity<AppUser> create(AppUser item) throws UsernameAlreadyExistException {
-        AppUser user = repository.findAppUserByUsername(item.getUsername())
-                .orElse(null);
-        if (user != null) {
-            throw new UsernameAlreadyExistException(USERNAME_ALREADY_TAKEN);
-        }
+    public AppUser create(AppUser item) throws UsernameAlreadyExistException {
+        AppUser savedItem = repository.save(item);
+        LOG.info("Création d'un appuser");
 
-        try {
-            String encodedPass = bCryptEncoder.encode(item.getPassword());
-            item.setPassword(encodedPass);
+        return savedItem;
 
-            AppUser savedItem = repository.save(item);
-            LOG.info("Création d'un appuser");
-
-            ConfirmationToken confirmationToken = confirmationTokenService.createConfirmationToken(savedItem);
-            ConfirmationToken save = confirmationTokenService.save(confirmationToken);
-
-            String link = "http://localhost:8080/authentication/confirm?token=" + save.getToken();
-            mailSender.send(savedItem.getEmail(), mailSender.buildEmail(savedItem.getUsername(), link));
-            return new ResponseEntity<>(savedItem, HttpStatus.CREATED);
-        } catch (Exception e) {
-            LOG.error("Une erreur est survenue pendant la création de l'appuser", e);
-            return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
-        }
     }
 
-    @Transactional
     public ResponseEntity<AppUser> update(Long id, AppUser item) throws AppUserNotFoundException {
         Optional<AppUser> existingItemOptional = repository.findById(id);
 
@@ -129,9 +106,30 @@ public class AppUserService implements UserDetailsService {
     }
 
 
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return repository.findAppUserByUsername(username).orElseThrow(() ->
+        AppUser user = repository.findAppUserByUsername(username).orElseThrow(() ->
                 new UsernameNotFoundException(String.format("Username with username %s not found", username)));
+        try {
+            validatingLoginAttempt(user);
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        return user;
+    }
+
+    private void validatingLoginAttempt(AppUser user) throws ExecutionException {
+        if (user.isAccountNonLocked()) {
+            if (loginAttemptService.hasExcedeedNumberOfAttempts(user.getUsername())) {
+                user.setIsActive(false);
+            } else {
+                user.setIsActive(true);
+            }
+
+        } else {
+            loginAttemptService.evictUserFromCache(user.getUsername());
+        }
     }
 }

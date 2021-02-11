@@ -5,12 +5,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
 import java.time.LocalDate;
 
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+
 @RestControllerAdvice
-public class ExceptionsHandler {
+public class ExceptionsHandler extends ResponseEntityExceptionHandler {
     public static final Logger LOG = LoggerFactory.getLogger(ExceptionsHandler.class);
 
 
@@ -27,9 +32,11 @@ public class ExceptionsHandler {
     }
 
     @ExceptionHandler(EmailAlreadyExistException.class)
-    public ResponseEntity<CustomHttpResponse> emailExistException(EmailAlreadyExistException exception) {
+    public ResponseEntity<?> emailExistException(EmailAlreadyExistException exception) {
         LOG.debug(exception.getMessage());
-        return getHttpResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
+        CustomHttpResponse response = new CustomHttpResponse(LocalDate.now(), NOT_FOUND.value(), NOT_FOUND,
+                NOT_FOUND.getReasonPhrase().toUpperCase(), exception.getMessage().toUpperCase());
+        return new ResponseEntity<>(response, NOT_FOUND);
     }
 
     @ExceptionHandler(EmailNotValidException.class)
@@ -51,11 +58,9 @@ public class ExceptionsHandler {
     }
 
     private ResponseEntity<CustomHttpResponse> getHttpResponse(HttpStatus httpStatus, String message) {
-        return new ResponseEntity<>(
-                new CustomHttpResponse(LocalDate.now(), httpStatus.value(), httpStatus,
-                        httpStatus.getReasonPhrase().toUpperCase(),
-                        message.toUpperCase()), httpStatus
-        );
+        return new ResponseEntity<>(new CustomHttpResponse(LocalDate.now(), httpStatus.value(), httpStatus,
+                httpStatus.getReasonPhrase().toUpperCase(), message.toUpperCase()), httpStatus);
 
     }
+
 }

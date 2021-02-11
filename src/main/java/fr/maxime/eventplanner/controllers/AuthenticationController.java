@@ -8,22 +8,23 @@ import fr.maxime.eventplanner.models.AppUser;
 import fr.maxime.eventplanner.services.login.LoginService;
 import fr.maxime.eventplanner.services.register.RegistrationService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+@CrossOrigin(origins = "*", maxAge = 3600, methods = {RequestMethod.GET, RequestMethod.POST})
 @RestController
 @RequestMapping("/authentication")
-@CrossOrigin
 @AllArgsConstructor
-public class AuthenticationController extends ResponseEntityExceptionHandler {
+public class AuthenticationController {
 
     private final RegistrationService service;
     private final LoginService loginService;
 
     @PostMapping("/register")
-    public ResponseEntity<AppUser> registerAppUser(@RequestBody RegistrationRequest request) throws EmailNotValidException, EmailAlreadyExistException, UsernameAlreadyExistException {
-        return service.registerUser(request);
+    public AppUser registerAppUser(@RequestBody RegistrationRequest request) throws EmailNotValidException, EmailAlreadyExistException, UsernameAlreadyExistException {
+        AppUser user = service.registerUser(request);
+        return user;
 
     }
 
